@@ -1,0 +1,193 @@
+import functions_framework
+
+@functions_framework.http
+def hello_http(request):
+    """HTTP Cloud Function.
+    Args:
+        request (flask.Request): The request object.
+        <https://flask.palletsprojects.com/en/1.1.x/api/#incoming-request-data>
+    Returns:
+        The response text, or any set of values that can be turned into a
+        Response object using `make_response`
+        <https://flask.palletsprojects.com/en/1.1.x/api/#flask.make_response>.
+    """
+    request_json = request.get_json(silent=True)
+    request_args = request.args
+
+    if request_json and 'name' in request_json:
+        name = request_json['name']
+    elif request_args and 'name' in request_args:
+        name = request_args['name']
+    else:
+        name = 'World'
+    return 'Hello {}!'.format(name)
+
+
+Yes, there are errors in this code:
+
+The model file is downloaded using model.download_to_filename('/tmp/body_fat_prediction_model.h5'), which suggests that it is a Keras model file. However, the file is opened using pickle.load(open('/tmp/body_fat_prediction_model.h5', 'rb')), which is used for loading pickle files. This will cause an error when trying to load the Keras model file.
+
+myinput = np.array([abc]).reshape((-1,1)) is reshaping the input array to have only one column, which is incorrect. The correct reshape function should be myinput = np.array([abc]).reshape((1, -1)).
+
+The variable time is used in the response message, but it is not defined anywhere before that. It should be prediction instead, which is the output of loaded_model.predict([[b,c,d,e,f,g,h,i,j,k,l,m,n]]).
+
+The response message is using a dictionary msg_res with a key 'Time Needed', but the value
+
+////////////////// OLD
+
+import pickle
+import numpy as np
+import functions_framework
+from google.cloud import storage
+import sklearn
+import json
+
+def hello_world(request):
+  #accessing gc storage bucket
+  storage_client = storage.Client()
+  bucket = storage_client.get_bucket('bodyfatbucket')
+  model = bucket.blob('body_fat_prediction_model.pkl')
+  model.download_to_filename('/tmp/body_fat_prediction_model.pkl')
+
+  request_json = request.get_json()
+  if request_json and 'message' in request_json:
+    abc = request_json['message']
+    b = abc['Age']
+    c = abc['Weight']
+    d = abc['Height']
+    e = abc['Neck']
+    f = abc['Chest']
+    g = abc['Abdomen']
+    h = abc['Hip']
+    i = abc['Thigh']
+    j = abc['Knee']
+    k = abc['Ankle']
+    l = abc['Biceps']
+    m = abc['Forearm']
+    n = abc['Wrist']
+
+    # load the model from disk
+    # filename = '/tmp/date_predict_model.sav'
+    #with open()
+    loaded_model = pickle.load(open('/tmp/body_fat_prediction_model.pkl', 'rb'))
+    myinput = np.array([abc]).reshape((1, -1))
+    time = loaded_model.predict([[b,c,d,e,f,g,h,i,j,k,l,m,n]])  
+    responce = time[0,0] 
+    #strA =str(a[0])
+    #return strA
+  else:
+    return f'Error'
+  msg_res = {'Body Fat Percentage':responce}
+  return json.dumps(msg_res), 200, {'Content-Type': 'application/json'}
+  
+  
+  ////////////////// CHAT GPT
+  
+import os
+import json
+import numpy as np
+import tensorflow as tf
+from google.cloud import storage
+
+BUCKET_NAME = 'bodyfatbucket'
+MODEL_FILE_NAME = 'body_fat_prediction_model.h5'
+
+def hello_world(request):
+  request_json = request.get_json()
+  
+  # Extract input variables from JSON request
+  age = request_json.get('age')
+  weight = request_json.get('weight')
+  height = request_json.get('height')
+  neck = request_json.get('neck')
+  chest = request_json.get('chest')
+  abdomen = request_json.get('abdomen')
+  hip = request_json.get('hip')
+  thigh = request_json.get('thigh')
+  knee = request_json.get('knee')
+  ankle = request_json.get('ankle')
+  biceps = request_json.get('biceps')
+  forearm = request_json.get('forearm')
+  wrist = request_json.get('wrist')
+
+  # Load the model from cloud storage
+  model = None
+  storage_client = storage.Client()
+  bucket = storage_client.get_bucket(BUCKET_NAME)
+  blob = bucket.blob(MODEL_FILE_NAME)
+  blob.download_to_filename('/tmp/model.h5')
+  model = tf.keras.models.load_model('/tmp/model.h5')
+
+  # Make a prediction
+  input_data = np.array([[age, weight, height, neck, chest, abdomen, hip, thigh, knee, ankle, biceps, forearm, wrist]])
+  prediction = model.predict(input_data)[0][0]
+  
+  # Create JSON response
+  response = {'predicted_body_fat': round(prediction)}
+  
+  return json.dumps(response)
+  
+  ///////////////// REQUIRED
+  
+  # Function dependencies, for example:
+# package>=version
+functions-framework==3.*
+tensorflow==2.11.0
+keras==2.11.0
+Keras-Preprocessing==1.1.2
+scikit-learn==1.0.2
+numpy==1.21.5
+pandas==1.4.4
+json5==0.9.6
+google-cloud-storage==2.7.0
+requests==2.28.1
+protobuf==3.19.6
+
+
+////////////////////// GCP DEPLOYED WORKING V1.0
+
+import os
+import json
+import numpy as np
+import tensorflow as tf
+from google.cloud import storage
+
+BUCKET_NAME = 'bodyfatbucket'
+MODEL_FILE_NAME = 'body_fat_prediction_model.h5'
+
+def hello_world(request):
+  request_json = request.get_json()
+  
+  # Extract input variables from JSON request
+  age = request_json.get('age')
+  weight = request_json.get('weight')
+  height = request_json.get('height')
+  neck = request_json.get('neck')
+  chest = request_json.get('chest')
+  abdomen = request_json.get('abdomen')
+  hip = request_json.get('hip')
+  thigh = request_json.get('thigh')
+  knee = request_json.get('knee')
+  ankle = request_json.get('ankle')
+  biceps = request_json.get('biceps')
+  forearm = request_json.get('forearm')
+  wrist = request_json.get('wrist')
+
+  # Load the model from cloud storage
+  model = None
+  storage_client = storage.Client()
+  bucket = storage_client.get_bucket(BUCKET_NAME)
+  blob = bucket.blob(MODEL_FILE_NAME)
+  blob.download_to_filename('/tmp/model.h5')
+  model = tf.keras.models.load_model('/tmp/model.h5')
+
+  # Make a prediction
+  input_data = np.array([[age, weight, height, neck, chest, abdomen, hip, thigh, knee, ankle, biceps, forearm, wrist]])
+  prediction = model.predict(input_data)[0][0]
+  
+  # Create JSON response
+  response = {'predicted_body_fat': round(prediction)}
+  
+  return json.dumps(response)
+  
+  
