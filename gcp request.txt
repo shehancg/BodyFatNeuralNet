@@ -190,4 +190,82 @@ def hello_world(request):
   
   return json.dumps(response)
   
+  ///////////////////////// GCP DEPLOYED WORKING V2.0 ACCURATELY
+  
+import os
+import json
+import numpy as np
+import tensorflow as tf
+import joblib as joblib
+from google.cloud import storage
+from sklearn.preprocessing import StandardScaler
+
+BUCKET_NAME = 'bodyfatbucket'
+MODEL_FILE_NAME = 'body_fat_prediction_model.h5'
+SCALER_FILE_NAME = 'scaler.pkl'
+
+def hello_world(request):
+  request_json = request.get_json()
+  scaler = StandardScaler()
+
+  # Extract input variables from JSON request
+  age = request_json.get('age')
+  weight = request_json.get('weight')
+  height = request_json.get('height')
+  neck = request_json.get('neck')
+  chest = request_json.get('chest')
+  abdomen = request_json.get('abdomen')
+  hip = request_json.get('hip')
+  thigh = request_json.get('thigh')
+  knee = request_json.get('knee')
+  ankle = request_json.get('ankle')
+  biceps = request_json.get('biceps')
+  forearm = request_json.get('forearm')
+  wrist = request_json.get('wrist')
+
+  # Load the model from cloud storage
+  model = None
+  scaler = None
+
+  storage_client = storage.Client()
+  bucket = storage_client.get_bucket(BUCKET_NAME)
+
+  blob = bucket.blob(MODEL_FILE_NAME)
+  blob.download_to_filename('/tmp/model.h5')
+  model = tf.keras.models.load_model('/tmp/model.h5')
+
+  blob = bucket.blob(SCALER_FILE_NAME)
+  blob.download_to_filename('/tmp/scaler.pkl')
+  with open('/tmp/scaler.pkl', 'rb') as f:
+    scaler = joblib.load(f)
+
+  # Make a prediction
+  input_data = [[age, weight, height, neck, chest, abdomen, hip, thigh, knee, ankle, biceps, forearm, wrist]]
+
+  # Scale the input features using the same StandardScaler object used during training
+  new_data_scaled = scaler.transform(input_data)
+
+  prediction = model.predict(new_data_scaled)
+
+  # Create JSON response
+  response = {'predicted_body_fat': round(prediction[0][0])}
+
+  return json.dumps(response)
+  
+  
+  {
+    "age": "40",
+    "weight": "125.25",
+    "height": "100",
+    "neck": "31.5",
+    "chest": "85.1",
+    "abdomen": "76",
+    "hip": "88.2",
+    "thigh": "50",
+    "knee": "34.7",
+    "ankle": "21",
+    "biceps": "26.1",
+    "forearm": "23.1",
+    "wrist": "16.1"
+}
   
