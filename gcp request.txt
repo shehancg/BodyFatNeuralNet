@@ -252,6 +252,7 @@ def hello_world(request):
 
   return json.dumps(response)
   
+  ///////////////////////////// JSON 
   
   {
     "age": "40",
